@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">AdtTest</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="error_tap_to_retry">ERROR !! Tap to retry.</string>
+</resources>
