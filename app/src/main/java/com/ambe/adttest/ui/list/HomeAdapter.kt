@@ -47,7 +47,7 @@ class HomeAdapter(var iOnClickItemHome: IOnClickItemHome) : ListAdapter<Homes, H
 
         }
 
-        private val formatDate = SimpleDateFormat("yyyy-MM-dd HH-mm-ss")
+        private val formatDate = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
         private val formatDate1 = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
 
 
