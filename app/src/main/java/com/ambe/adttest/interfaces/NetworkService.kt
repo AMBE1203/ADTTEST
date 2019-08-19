@@ -20,6 +20,8 @@ import java.io.File
 import android.net.NetworkInfo
 import android.support.v4.content.ContextCompat.getSystemService
 import android.net.ConnectivityManager
+import android.util.Log
+import com.google.gson.Gson
 
 
 /**
@@ -44,11 +46,12 @@ interface NetworkService {
             val OFFLINE_INTERCEPTOR = Interceptor { chain ->
                 var request = chain.request()
                 if (!Utils.checkInternetConnection(context)) {
+
                     val maxStale = 60 * 60 * 24 * 28 // tolerate 4-weeks stale
                     request = request.newBuilder()
-                            .header("Authorization", "Bearer $token")
-                            .header("cache-control", "public, only-if-cached, max-stale=$maxStale")
-                            .build()
+                        .header("Authorization", "Bearer $token")
+                        .header("cache-control", "public, only-if-cached, max-stale=$maxStale")
+                        .build()
                 }
                 chain.proceed(request)
             }
@@ -57,49 +60,59 @@ interface NetworkService {
                 var originalResponse = chain.proceed(chain.request())
                 val cacheControl = originalResponse.header("cache-control")
 
-                return@Interceptor if ((cacheControl == null || cacheControl.contains("no-store") || cacheControl.contains("no-cache") ||
-                                cacheControl.contains("must-revalidate") || cacheControl.contains("max-age=0"))) {
+                return@Interceptor if ((cacheControl == null || cacheControl.contains("no-store") || cacheControl.contains(
+                        "no-cache"
+                    ) ||
+                            cacheControl.contains("must-revalidate") || cacheControl.contains("max-age=0"))
+                ) {
                     originalResponse.newBuilder()
-                            .header("Authorization", "Bearer $token")
+                        .header("Authorization", "Bearer $token")
 
-                            .header("cache-control", "public, max-age=" + 10)
-                            .build()
+                        .header("cache-control", "public, max-age=" + 10)
+                        .build()
+
                 } else {
+
                     originalResponse
                 }
+
             }
+            Log.e("AMBE12030204", Gson().toJson(REWRITE_RESPONSE_INTERCEPTOR))
+            Log.e("AMBE12030204", Gson().toJson(OFFLINE_INTERCEPTOR))
+
 
             val okHttpClient = OkHttpClient.Builder()
-                    .addNetworkInterceptor(REWRITE_RESPONSE_INTERCEPTOR)
-                    .addInterceptor(OFFLINE_INTERCEPTOR)
-                    .cache(myCache)
-
-//                    .addInterceptor { chain ->
-//                        var request = chain.request()
-//                        request = if (Utils.checkInternetConnection(context))
-//                            request.newBuilder().removeHeader("Pragma")
-//                                    .removeHeader("Cache-Control").header("Authorization", "Bearer $token").header(
-//                                            "Cache-Control",
-//                                            "public, max-age=" + 5
-//                                    ).build() //      .header("Authorization", "Bearer " + token)
+                .cache(myCache)
 //
-//                        else
-//                            request.newBuilder().removeHeader("Pragma")
-//                                    .removeHeader("Cache-Control").header("Authorization", "Bearer $token").header(
-//                                            "Cache-Control",
-//                                            "public, only-if-cached, max-stale=" + 60 * 60 * 24 * 7
-//                                    ).build()
-//                        chain.proceed(request)
-//                    }
-                    .build()
+//                .addNetworkInterceptor(Test(context).REWRITE_RESPONSE_INTERCEPTOR)
+//                    .addInterceptor(Test(context).REWRITE_RESPONSE_INTERCEPTOR_OFFLINE)
+
+                .addInterceptor { chain ->
+                    var request = chain.request()
+                    request = if (Utils.checkInternetConnection(context))
+                        request.newBuilder().removeHeader("Pragma").removeHeader("Cache-Control")
+                            .header("Authorization", "Bearer $token").header(
+                                "Cache-Control",
+                                "public, max-age=" + 5
+                            ).build() //      .header("Authorization", "Bearer " + token)
+
+                    else
+                        request.newBuilder().removeHeader("Pragma").removeHeader("Cache-Control")
+                            .header("Authorization", "Bearer $token").header(
+                                "Cache-Control",
+                                "public, only-if-cached, max-stale=" + 60 * 60 * 24 * 7
+                            ).build()
+                    chain.proceed(request)
+                }
+                .build()
 
 
             val retrofit = Retrofit.Builder()
-                    .baseUrl(Const.BASE_URL)
-                    .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
-                    .addConverterFactory(GsonConverterFactory.create())
-                    .client(okHttpClient)
-                    .build()
+                .baseUrl(Const.BASE_URL)
+                .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(okHttpClient)
+                .build()
             return retrofit.create(NetworkService::class.java)
         }
     }
