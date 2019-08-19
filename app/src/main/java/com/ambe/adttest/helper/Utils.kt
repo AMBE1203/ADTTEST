@@ -8,6 +8,7 @@ import android.net.NetworkInfo
  *  Created by AMBE on 16/8/2019 at 8:27 AM.
  */
 object Utils {
+    @JvmStatic
     fun checkInternetConnection(context: Context): Boolean {
         val connectivity = context
             .getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
